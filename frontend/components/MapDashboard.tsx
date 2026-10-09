@@ -2,23 +2,9 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import rawGarduData from "../garduData.json";
+import garduDataRaw from "../garduData.json";
 
-// Interface TypeScript untuk mencegah error di Vercel Build
-interface Gardu {
-  id: string;
-  name: string;
-  location: string;
-  ipAddress: string;
-  lat: number;
-  lng: number;
-  cameraCount?: number;
-  lastCheck?: string;
-  status?: string;
-}
-
-const garduList: Gardu[] = rawGarduData as Gardu[];
-
+// Dynamic import untuk Leaflet (mencegah error SSR)
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
   { ssr: false }
@@ -40,6 +26,9 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useMap } from "react-leaflet/hooks";
 
+// Buka paksa ke tipe any agar TypeScript tidak lagi mengecek property status
+const garduList: any[] = garduDataRaw as any[];
+
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
@@ -50,7 +39,7 @@ const customIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-function MapFlyTo({ selectedGardu }: { selectedGardu: Gardu | null }) {
+function MapFlyTo({ selectedGardu }: { selectedGardu: any }) {
   const map = useMap();
   useEffect(() => {
     if (
@@ -69,17 +58,19 @@ function MapFlyTo({ selectedGardu }: { selectedGardu: Gardu | null }) {
 
 export default function MapDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGardu, setSelectedGardu] = useState<Gardu | null>(null);
+  const [selectedGardu, setSelectedGardu] = useState<any>(null);
 
+  // Perhitungan statistik ringkasan status gardu
   const totalGardu = garduList.length;
-  const totalOnline = garduList.filter((g) => g.status !== "OFFLINE").length;
-  const totalOffline = garduList.filter((g) => g.status === "OFFLINE").length;
+  const totalOnline = garduList.filter((g) => g?.status !== "OFFLINE").length;
+  const totalOffline = garduList.filter((g) => g?.status === "OFFLINE").length;
 
+  // Filter pencarian
   const filteredGardu = garduList.filter((gardu) => {
     const term = searchTerm.toLowerCase();
-    const nameMatch = gardu.name?.toLowerCase().includes(term);
-    const locationMatch = gardu.location?.toLowerCase().includes(term);
-    const ipMatch = gardu.ipAddress?.toLowerCase().includes(term);
+    const nameMatch = gardu?.name?.toLowerCase().includes(term);
+    const locationMatch = gardu?.location?.toLowerCase().includes(term);
+    const ipMatch = gardu?.ipAddress?.toLowerCase().includes(term);
     return nameMatch || locationMatch || ipMatch;
   });
 
@@ -87,6 +78,7 @@ export default function MapDashboard() {
     <div className="flex h-screen w-full overflow-hidden bg-slate-950 text-white font-sans">
       {/* SIDEBAR KIRI */}
       <div className="w-80 h-full bg-slate-900 flex flex-col border-r border-slate-800 shadow-xl z-10">
+        {/* Header Sidebar */}
         <div className="p-4 border-b border-slate-800 bg-slate-900">
           <h1 className="font-bold text-lg text-blue-400 tracking-wide">
             PLN UP2D BANTEN
@@ -96,21 +88,24 @@ export default function MapDashboard() {
           </p>
         </div>
 
-        {/* STAT CARDS */}
+        {/* STAT CARDS (RINGKASAN STATUS) */}
         <div className="p-3 border-b border-slate-800 bg-slate-900/80">
           <div className="grid grid-cols-3 gap-2 text-center">
+            {/* Total Gardu */}
             <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60">
               <div className="text-[10px] text-slate-400 font-medium">Total</div>
               <div className="text-base font-bold text-blue-400">{totalGardu}</div>
               <div className="text-[9px] text-slate-500">GI</div>
             </div>
 
+            {/* Online */}
             <div className="bg-emerald-950/40 p-2 rounded-lg border border-emerald-800/50">
               <div className="text-[10px] text-emerald-300 font-medium">Online</div>
               <div className="text-base font-bold text-emerald-400">{totalOnline}</div>
               <div className="text-[9px] text-emerald-500/80">GI</div>
             </div>
 
+            {/* Offline */}
             <div className="bg-rose-950/40 p-2 rounded-lg border border-rose-800/50">
               <div className="text-[10px] text-rose-300 font-medium">Offline</div>
               <div className="text-base font-bold text-rose-400">{totalOffline}</div>
@@ -119,7 +114,7 @@ export default function MapDashboard() {
           </div>
         </div>
 
-        {/* PENCARIAN */}
+        {/* KOLOM PENCARIAN */}
         <div className="p-3 border-b border-slate-800 bg-slate-900/50">
           <input
             type="text"
@@ -133,7 +128,7 @@ export default function MapDashboard() {
           </p>
         </div>
 
-        {/* DAFTAR GARDU */}
+        {/* DAFTAR GARDU (SCROLLABLE) */}
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
           {filteredGardu.length > 0 ? (
             filteredGardu.map((gardu) => (
@@ -150,7 +145,7 @@ export default function MapDashboard() {
                   <span className="flex items-center gap-1.5">
                     <span className="text-rose-500">📍</span> {gardu.name}
                   </span>
-                  {gardu.status === "OFFLINE" ? (
+                  {gardu?.status === "OFFLINE" ? (
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800">OFFLINE</span>
                   ) : (
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">ONLINE</span>
@@ -170,7 +165,7 @@ export default function MapDashboard() {
         </div>
       </div>
 
-      {/* PETA */}
+      {/* PETA LEAFLET */}
       <div className="flex-1 h-full relative z-0">
         <MapContainer
           center={[-6.12, 106.15]}
@@ -185,11 +180,11 @@ export default function MapDashboard() {
           <MapFlyTo selectedGardu={selectedGardu} />
 
           {filteredGardu.map((gardu) => {
-            if (typeof gardu.lat !== "number" || typeof gardu.lng !== "number") {
+            if (typeof gardu?.lat !== "number" || typeof gardu?.lng !== "number") {
               return null;
             }
 
-            const isOffline = gardu.status === "OFFLINE";
+            const isOffline = gardu?.status === "OFFLINE";
 
             return (
               <Marker
@@ -199,7 +194,7 @@ export default function MapDashboard() {
                 eventHandlers={{
                   click: () => setSelectedGardu(gardu),
                 }}
-                ref={(ref) => {
+                ref={(ref: any) => {
                   if (ref && selectedGardu?.id === gardu.id) {
                     ref.openPopup();
                   }
@@ -214,6 +209,7 @@ export default function MapDashboard() {
                       <p className="text-xs text-slate-400">{gardu.location}</p>
                     </div>
 
+                    {/* Status Badge */}
                     <div className="bg-slate-800/90 p-3 rounded-lg border border-slate-700/80 flex items-center justify-between mb-3">
                       <span className="text-xs font-medium text-slate-300">
                         Status Jaringan Kamera
