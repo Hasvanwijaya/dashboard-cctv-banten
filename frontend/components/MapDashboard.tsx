@@ -59,13 +59,13 @@ export default function MapDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGardu, setSelectedGardu] = useState<any>(null);
 
-  // Perhitungan statistik ringkasan status gardu
+  // Perhitungan statistik ringkasan status gardu (Aman dari TypeScript Error)
   const totalGardu = garduList.length;
   const totalOnline = garduList.filter((g: any) => g.status !== "OFFLINE").length;
   const totalOffline = garduList.filter((g: any) => g.status === "OFFLINE").length;
 
   // Filter pencarian
-  const filteredGardu = garduList.filter((gardu) => {
+  const filteredGardu = (garduList as any[]).filter((gardu) => {
     const term = searchTerm.toLowerCase();
     const nameMatch = gardu.name?.toLowerCase().includes(term);
     const locationMatch = gardu.location?.toLowerCase().includes(term);
@@ -130,7 +130,7 @@ export default function MapDashboard() {
         {/* DAFTAR GARDU (SCROLLABLE) */}
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
           {filteredGardu.length > 0 ? (
-            filteredGardu.map((gardu) => (
+            filteredGardu.map((gardu: any) => (
               <div
                 key={gardu.id}
                 onClick={() => setSelectedGardu(gardu)}
@@ -178,7 +178,7 @@ export default function MapDashboard() {
 
           <MapFlyTo selectedGardu={selectedGardu} />
 
-          {filteredGardu.map((gardu) => {
+          {filteredGardu.map((gardu: any) => {
             if (typeof gardu.lat !== "number" || typeof gardu.lng !== "number") {
               return null;
             }
@@ -193,7 +193,7 @@ export default function MapDashboard() {
                 eventHandlers={{
                   click: () => setSelectedGardu(gardu),
                 }}
-                ref={(ref) => {
+                ref={(ref: any) => {
                   if (ref && selectedGardu?.id === gardu.id) {
                     ref.openPopup();
                   }
